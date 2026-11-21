@@ -1,0 +1,230 @@
+:root {
+  --bg: #1b1d2a;
+  --fg: #f4f4f8;
+  --accent: #7c6cf2;
+  --matched: #7ee787;
+  --pad: clamp(8px, 2vmin, 24px);
+  --gap: clamp(4px, 1.2vmin, 12px);
+  --side: clamp(40px, 8vmin, 56px);
+  --radius: 10%;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------- layout: board + side controls, sized to fit the viewport ---------- */
+
+.app {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pad);
+  padding: var(--pad);
+}
+
+.board {
+  /* Largest square card that fits both the width and the height. */
+  --size: min(
+    calc((100vw - 3 * var(--pad) - var(--side) - (var(--cols) - 1) * var(--gap)) / var(--cols)),
+    calc((100dvh - 2 * var(--pad) - (var(--rows) - 1) * var(--gap)) / var(--rows))
+  );
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--size));
+  grid-auto-rows: var(--size);
+  gap: var(--gap);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.icon-btn {
+  width: var(--side);
+  height: var(--side);
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.08);
+  font-size: calc(var(--side) * 0.45);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.icon-btn:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+
+/* ---------- card ---------- */
+
+.card {
+  padding: 0;
+  border: 0;
+  background: none;
+  perspective: 800px;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.card:disabled {
+  cursor: default;
+}
+
+.card-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.4s ease;
+  transform-style: preserve-3d;
+}
+
+.card.up .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+}
+
+.card-back {
+  background:
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.25) 0 18%, transparent 19%),
+    repeating-linear-gradient(45deg, #5a4fd1 0 8%, #6c5ce7 8% 16%);
+  border: 2px solid rgb(255 255 255 / 0.15);
+}
+
+.card:not(:disabled):hover .card-back {
+  filter: brightness(1.12);
+}
+
+.card-front {
+  transform: rotateY(180deg);
+  background: #fff;
+}
+
+.card-front img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.card.matched .card-front {
+  outline: 3px solid var(--matched);
+  outline-offset: -3px;
+  animation: pop 0.35s ease 0.35s;
+}
+
+@keyframes pop {
+  50% {
+    scale: 1.08;
+  }
+}
+
+/* ---------- win modal ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.55);
+  animation: fade 0.3s ease;
+}
+
+.modal {
+  background: #2a2d40;
+  padding: clamp(16px, 4vmin, 40px) clamp(24px, 6vmin, 56px);
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 0.5);
+}
+
+.modal h1 {
+  margin: 0 0 16px;
+  font-size: clamp(20px, 5vmin, 36px);
+}
+
+.primary {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 28px;
+  background: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- portrait phones: ask to rotate ---------- */
+
+.rotate {
+  display: none;
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: var(--bg);
+    text-align: center;
+    padding: 24px;
+  }
+
+  .rotate-icon {
+    font-size: 64px;
+    animation: tilt 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes tilt {
+  50% {
+    rotate: 90deg;
+  }
+}
