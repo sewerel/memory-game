@@ -30,7 +30,7 @@ function serviceWorker(): Plugin {
   }
 }
 
-// Build is flat (no subfolders) with relative paths, so dist/ can be dropped into a gist as-is.
+// Flat build with relative paths: works under the GitHub Pages sub-path (/memory-game/) or any host.
 export default defineConfig({
   base: './',
   plugins: [react(), serviceWorker()],

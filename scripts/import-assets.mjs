@@ -15,7 +15,7 @@ const SOUNDS = path.join(ROOT, 'sounds')
 const IMAGE = /\.(jpe?g|png|webp|avif|gif|tiff?)$/i
 const AUDIO = /\.(mp3|m4a|ogg|wav)$/i
 
-// Bulgarian → Latin, so file names are safe in gist URLs and easy to match up.
+// Bulgarian → Latin, so file names are safe in URLs and easy to match up.
 const BG = {
   а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y',
   к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u',

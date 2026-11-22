@@ -1,7 +1,8 @@
 # Memory Game
 
 React + TypeScript (Vite) card-matching memory game. Landscape-only, square (1:1) cards.
-Will be published as a GitHub Gist web app, so the build must stay flat and static.
+Published with **GitHub Pages**: https://sewerel.github.io/memory-game/ (repo: https://github.com/sewerel/memory-game, public).
+Every push to `main` builds and deploys via `.github/workflows/deploy.yml` (tests → build → Pages). Static build, relative paths.
 Target is **Android phones (Chrome)** in landscape — iOS/Safari quirks don't need handling.
 
 ## Commands
@@ -23,16 +24,16 @@ Target is **Android phones (Chrome)** in landscape — iOS/Safari quirks don't n
 - `src/index.css` — all styling. Card size is pure CSS: largest square that fits both viewport width and height (`--cols`/`--rows` set from `App.tsx`).
 - `src/assets/cards/` — card face images (10 family photos, 512px WebP), picked up automatically via `import.meta.glob`. Add/replace them with `npm run assets`, not by hand.
 - `src/pwa.ts` — service worker registration (production only) + `useInstallPrompt` (the ⤓ button in the controls shows only while Chrome offers install).
-- `public/manifest.webmanifest` — PWA manifest: `display: fullscreen`, `orientation: landscape` (installed app is locked to landscape), relative `start_url`/`scope` so it works from any gist URL.
+- `public/manifest.webmanifest` — PWA manifest: `display: fullscreen`, `orientation: landscape` (installed app is locked to landscape), relative `start_url`/`scope` so it works under the Pages sub-path.
 - `pwa/sw.js` — service worker template. A small plugin in `vite.config.ts` emits `dist/sw.js` with every built file (+ `public/`) as the precache list and a version hash of that list, so the full game incl. photos/sounds works offline after the first open, and each deploy with changed files gets a fresh cache. Pages are network-first, hashed assets cache-first.
 - `src/assets/sounds/` — voice clips (MP3), paired with images by base name (`baba.webp` ↔ `baba.mp3`); `bravo.mp3` is the win sound. Pairing happens in `App.tsx`.
 
 ## Design decisions (keep these)
 
-- **PWA without dependencies** — hand-written manifest + service worker; no `vite-plugin-pwa`. Install needs HTTPS (the gist host) or `localhost`; plain `http://192.168.x.x` on a phone won't offer install.
+- **PWA without dependencies** — hand-written manifest + service worker; no `vite-plugin-pwa`. Install needs HTTPS (GitHub Pages) or `localhost`; plain `http://192.168.x.x` on a phone won't offer install.
 - **No score, no timer, no moves counter.** Just play → win screen → play again.
 - **Landscape only.** Portrait on touch devices shows a "rotate your phone" overlay (CSS media query).
-- **Gist-friendly build:** `vite.config.ts` uses `base: './'`, `assetsDir: ''` (flat output, gists have no folders) and `assetsInlineLimit: 0` (every image stays a separate file, not inlined).
+- **Static, relative build:** `vite.config.ts` uses `base: './'` (works under `/memory-game/` on Pages and anywhere else), `assetsDir: ''` (flat output) and `assetsInlineLimit: 0` (every image/sound stays a separate file, not inlined).
 - Restart turns cards face down first, then deals the new deck after the flip animation, so new faces aren't revealed mid-flip.
 - Project lives in `D:/projects/.shared/` on purpose: Laragon auto-creates `{dir}.test` vhosts for every folder directly in `D:/projects`.
 
