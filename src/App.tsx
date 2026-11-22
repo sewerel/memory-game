@@ -3,6 +3,7 @@ import { Card } from './components/Card'
 import { isFaceUp } from './game/logic'
 import { isMuted, preloadClips, setMuted } from './game/sound'
 import { useMemoryGame } from './game/useMemoryGame'
+import { useInstallPrompt } from './pwa'
 
 // Every image in src/assets/cards becomes a card face; a sound in src/assets/sounds with the
 // same base name (baba.webp ↔ baba.mp3) plays when that card flips. bravo.* plays on a win.
@@ -47,6 +48,7 @@ export default function App() {
   })
   const [muted, setMutedState] = useState(isMuted)
   const [showWin, setShowWin] = useState(false)
+  const install = useInstallPrompt()
 
   // Let the last pair finish flipping before showing the win screen.
   useEffect(() => {
@@ -81,6 +83,11 @@ export default function App() {
         <button className="icon-btn" onClick={restart} aria-label="New game">
           ↻
         </button>
+        {install && (
+          <button className="icon-btn" onClick={install} aria-label="Install app">
+            ⤓
+          </button>
+        )}
       </aside>
 
       {showWin && (

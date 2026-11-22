@@ -9,6 +9,8 @@ Target is **Android phones (Chrome)** in landscape — iOS/Safari quirks don't n
 - `npm run dev -- --host` — dev server (also reachable from a phone on the same Wi-Fi)
 - `npm test` — Vitest (game logic only)
 - `npm run build` — type-check + production build into `dist/`
+- `npm run preview -- --host` — serve the built `dist/` (port 4173); use this to test the PWA, the service worker is not registered in dev
+- `npm run icons` — regenerate the app icon (`public/icon.svg`, `icon-192.png`, `icon-512.png`) from `scripts/make-icons.mjs`
 - `npm run assets -- "<folder>"` — import images + sounds from one folder (`scripts/import-assets.mjs`): images are square-cropped to 512px WebP → `src/assets/cards/`, sounds are copied as-is → `src/assets/sounds/`. Bulgarian names are transliterated to Latin. Source so far: `C:/Users/X390/Downloads/images`.
 
 ## Layout
@@ -20,10 +22,14 @@ Target is **Android phones (Chrome)** in landscape — iOS/Safari quirks don't n
 - `src/App.tsx` — loads card images, grid size (`COLS`/`ROWS`), controls, win modal, rotate overlay.
 - `src/index.css` — all styling. Card size is pure CSS: largest square that fits both viewport width and height (`--cols`/`--rows` set from `App.tsx`).
 - `src/assets/cards/` — card face images (10 family photos, 512px WebP), picked up automatically via `import.meta.glob`. Add/replace them with `npm run assets`, not by hand.
+- `src/pwa.ts` — service worker registration (production only) + `useInstallPrompt` (the ⤓ button in the controls shows only while Chrome offers install).
+- `public/manifest.webmanifest` — PWA manifest: `display: fullscreen`, `orientation: landscape` (installed app is locked to landscape), relative `start_url`/`scope` so it works from any gist URL.
+- `pwa/sw.js` — service worker template. A small plugin in `vite.config.ts` emits `dist/sw.js` with every built file (+ `public/`) as the precache list and a version hash of that list, so the full game incl. photos/sounds works offline after the first open, and each deploy with changed files gets a fresh cache. Pages are network-first, hashed assets cache-first.
 - `src/assets/sounds/` — voice clips (MP3), paired with images by base name (`baba.webp` ↔ `baba.mp3`); `bravo.mp3` is the win sound. Pairing happens in `App.tsx`.
 
 ## Design decisions (keep these)
 
+- **PWA without dependencies** — hand-written manifest + service worker; no `vite-plugin-pwa`. Install needs HTTPS (the gist host) or `localhost`; plain `http://192.168.x.x` on a phone won't offer install.
 - **No score, no timer, no moves counter.** Just play → win screen → play again.
 - **Landscape only.** Portrait on touch devices shows a "rotate your phone" overlay (CSS media query).
 - **Gist-friendly build:** `vite.config.ts` uses `base: './'`, `assetsDir: ''` (flat output, gists have no folders) and `assetsInlineLimit: 0` (every image stays a separate file, not inlined).
