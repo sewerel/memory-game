@@ -2,22 +2,25 @@
 
 React + TypeScript (Vite) card-matching memory game. Landscape-only, square (1:1) cards.
 Will be published as a GitHub Gist web app, so the build must stay flat and static.
+Target is **Android phones (Chrome)** in landscape — iOS/Safari quirks don't need handling.
 
 ## Commands
 
 - `npm run dev -- --host` — dev server (also reachable from a phone on the same Wi-Fi)
 - `npm test` — Vitest (game logic only)
 - `npm run build` — type-check + production build into `dist/`
+- `npm run assets -- "<folder>"` — import images + sounds from one folder (`scripts/import-assets.mjs`): images are square-cropped to 512px WebP → `src/assets/cards/`, sounds are copied as-is → `src/assets/sounds/`. Bulgarian names are transliterated to Latin. Source so far: `C:/Users/X390/Downloads/images`.
 
 ## Layout
 
 - `src/game/logic.ts` — pure game rules: `deal`, `shuffle`, `reducer`, `flipOutcome`, `isWon`. Keep it React-free and covered by `logic.test.ts`.
-- `src/game/useMemoryGame.ts` — React hook: wires the reducer, mismatch flip-back timer, restart, sounds.
-- `src/game/sound.ts` — synthesized Web Audio effects (flip / match / miss / win) + mute (localStorage, wrapped in try/catch).
+- `src/game/useMemoryGame.ts` — React hook: wires the reducer, mismatch flip-back timer, sounds, win → bravo → automatic new game.
+- `src/game/sound.ts` — one Web Audio context for everything: recorded clips (`preloadClips`, `playClip` — a new clip cuts off the previous one, `whenClipDone`) + synthesized fallback effects (flip / match / miss / win) + mute (localStorage, wrapped in try/catch).
 - `src/components/Card.tsx` — 3D flip card (CSS `rotateY` + `backface-visibility`).
 - `src/App.tsx` — loads card images, grid size (`COLS`/`ROWS`), controls, win modal, rotate overlay.
 - `src/index.css` — all styling. Card size is pure CSS: largest square that fits both viewport width and height (`--cols`/`--rows` set from `App.tsx`).
-- `src/assets/cards/` — card face images, picked up automatically via `import.meta.glob`.
+- `src/assets/cards/` — card face images (10 family photos, 512px WebP), picked up automatically via `import.meta.glob`. Add/replace them with `npm run assets`, not by hand.
+- `src/assets/sounds/` — voice clips (MP3), paired with images by base name (`baba.webp` ↔ `baba.mp3`); `bravo.mp3` is the win sound. Pairing happens in `App.tsx`.
 
 ## Design decisions (keep these)
 
@@ -27,8 +30,10 @@ Will be published as a GitHub Gist web app, so the build must stay flat and stat
 - Restart turns cards face down first, then deals the new deck after the flip animation, so new faces aren't revealed mid-flip.
 - Project lives in `D:/projects/.shared/` on purpose: Laragon auto-creates `{dir}.test` vhosts for every folder directly in `D:/projects`.
 
-## Planned next steps
+## Current setup
 
-1. **Real images** — the user will provide square images. Drop them in `src/assets/cards/` and delete the `placeholder-*.svg` files. Optionally resize/compress (~256–512px WebP) to keep the gist light.
-2. **Smaller grid** — lower `COLS`/`ROWS` in `src/App.tsx` (currently 6×4 = 12 pairs). `COLS * ROWS` must be even and the board should stay wider than tall (e.g. 4×3 = 6 pairs, 5×4 = 10 pairs). Pairs are capped by the number of images available.
-3. **Per-image sound** — each image gets its own sound that plays when that card is flipped (or matched). Suggested convention: `src/assets/sounds/<same-basename-as-image>.mp3`, loaded with `import.meta.glob` and paired by file name; fall back to the synthesized `sound.flip()` when an image has no sound. Sounds stay separate files in the build (same as images) and must respect mute.
+- Grid is **4×3 = 6 pairs** (`COLS`/`ROWS` in `src/App.tsx`). With 10 images, each game uses a random 6. `COLS * ROWS` must be even.
+- **Sounds:** flipping a card plays that image's voice clip (synth blip if it has none). A match plays a short chime *after* the voice; a miss has no buzz when a voice clip played. The final match skips the chime.
+- **Win:** waits for the last voice clip, plays `bravo.mp3`, shows the win screen, then starts a new game automatically (after bravo ends, min 2.5s). "Play again" restarts immediately.
+- Mismatched pairs stay visible 1.2s (long enough to hear the voice start).
+- Clips are used as recorded (no trimming/normalizing — ffmpeg isn't available here).

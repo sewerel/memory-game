@@ -1,29 +1,50 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Card } from './components/Card'
 import { isFaceUp } from './game/logic'
-import { isMuted, setMuted } from './game/sound'
+import { isMuted, preloadClips, setMuted } from './game/sound'
 import { useMemoryGame } from './game/useMemoryGame'
 
-// Every image in src/assets/cards becomes a card face (kept as separate files in the build).
-const images = Object.values(
-  import.meta.glob<string>('./assets/cards/*.{svg,png,jpg,jpeg,webp,avif}', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
+// Every image in src/assets/cards becomes a card face; a sound in src/assets/sounds with the
+// same base name (baba.webp ↔ baba.mp3) plays when that card flips. bravo.* plays on a win.
+// All stay separate files in the build.
+const imageFiles = import.meta.glob<string>('./assets/cards/*.{svg,png,jpg,jpeg,webp,avif}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+})
+const soundFiles = import.meta.glob<string>('./assets/sounds/*.{mp3,m4a,ogg,wav}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+})
+
+const baseName = (path: string) => path.replace(/^.*\//, '').replace(/\.[^.]+$/, '')
+const soundsByName = new Map(Object.entries(soundFiles).map(([p, url]) => [baseName(p), url]))
+const soundByImage = new Map(
+  Object.entries(imageFiles).map(([p, url]) => [url, soundsByName.get(baseName(p))]),
 )
 
-const COLS = 6
-const ROWS = 4
+const images = Object.values(imageFiles)
+const soundFor = (image: string) => soundByImage.get(image)
+const WIN_SOUND = soundsByName.get('bravo')
+
+const COLS = 4
+const ROWS = 3
 const PAIRS = Math.min((COLS * ROWS) / 2, images.length)
 
-// Preload so faces never pop in on the first flip.
+// Preload so faces never pop in and voices play instantly on the first flip.
 images.forEach((src) => {
   new Image().src = src
 })
+preloadClips(Object.values(soundFiles))
 
 export default function App() {
-  const { state, won, flip, restart } = useMemoryGame(images, PAIRS)
+  const { state, won, flip, restart } = useMemoryGame({
+    images,
+    pairs: PAIRS,
+    soundFor,
+    winSound: WIN_SOUND,
+  })
   const [muted, setMutedState] = useState(isMuted)
   const [showWin, setShowWin] = useState(false)
 

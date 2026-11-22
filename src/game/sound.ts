@@ -1,5 +1,6 @@
-// Tiny synthesized sound effects (Web Audio) — no audio files needed.
-// Swap for real samples later if you want.
+// Sound: recorded clips (per-image voice, bravo) + tiny synthesized effects as fallback.
+// Everything goes through one Web Audio context: once it's unlocked by the first tap,
+// clips can also play from timers (e.g. bravo after the last match), including on iOS.
 
 let ctx: AudioContext | null = null
 let muted = readMuted()
@@ -18,6 +19,7 @@ export function isMuted() {
 
 export function setMuted(value: boolean) {
   muted = value
+  if (value) stopClip()
   try {
     localStorage.setItem('memory-muted', value ? '1' : '0')
   } catch {
@@ -30,6 +32,65 @@ function audio() {
   if (ctx.state === 'suspended') void ctx.resume()
   return ctx
 }
+
+// ---------- recorded clips ----------
+
+const buffers = new Map<string, Promise<AudioBuffer | null>>()
+
+/** Fetch + decode clips up front so they play instantly on flip. */
+export function preloadClips(urls: readonly string[]) {
+  for (const url of urls) {
+    if (buffers.has(url)) continue
+    buffers.set(
+      url,
+      fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((data) => audio().decodeAudioData(data))
+        .catch(() => null), // missing/broken clip → just stay silent
+    )
+  }
+}
+
+let current: AudioBufferSourceNode | null = null
+let idle: Promise<void> = Promise.resolve()
+
+function stopClip() {
+  try {
+    current?.stop()
+  } catch {
+    /* already stopped */
+  }
+  current = null
+}
+
+/** Play a clip, cutting off any clip still playing. Resolves when it ends. */
+export function playClip(url: string): Promise<void> {
+  stopClip()
+  if (muted) return (idle = Promise.resolve())
+  preloadClips([url])
+  idle = buffers.get(url)!.then(
+    (buffer) =>
+      new Promise<void>((resolve) => {
+        if (!buffer || muted) return resolve()
+        const ac = audio()
+        const source = ac.createBufferSource()
+        source.buffer = buffer
+        source.connect(ac.destination)
+        source.onended = () => {
+          if (current === source) current = null
+          resolve()
+        }
+        current = source
+        source.start()
+      }),
+  )
+  return idle
+}
+
+/** Resolves once the most recently started clip has finished. */
+export const whenClipDone = () => idle
+
+// ---------- synthesized effects ----------
 
 function tone(freq: number, at: number, dur: number, type: OscillatorType = 'sine', vol = 0.15) {
   if (muted) return
