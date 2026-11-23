@@ -29,6 +29,15 @@ body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none; /* no long-press menu on photos */
+  /* Little hands use many fingers at once: no pinch/double-tap zoom, no panning,
+     no pull-to-refresh. Applies to everything inside. */
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+html {
+  touch-action: none;
 }
 
 button {

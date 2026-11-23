@@ -63,7 +63,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" onContextMenu={(e) => e.preventDefault()}>
       <main className="board" style={{ '--cols': COLS, '--rows': ROWS } as CSSProperties}>
         {state.cards.map((card, i) => (
           <Card
@@ -93,9 +93,9 @@ export default function App() {
       {showWin && (
         <div className="overlay">
           <div className="modal">
-            <h1>You found them all!</h1>
+            <h1>Браво, намери всички!</h1>
             <button className="primary" onClick={restart}>
-              Play again
+              Играй отново
             </button>
           </div>
         </div>

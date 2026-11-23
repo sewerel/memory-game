@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useReducer } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef } from 'react'
 import { deal, flipOutcome, isWon, reducer } from './logic'
 import { playClip, sound, whenClipDone } from './sound'
 
 const MISMATCH_DELAY = 1200
 const FLIP_DURATION = 400
-/** Minimum time the win screen stays up before the next game starts on its own. */
-const MIN_WIN_PAUSE = 2500
 
 type Options = {
   images: readonly string[]
@@ -36,41 +34,48 @@ export function useMemoryGame({ images, pairs, soundFor, winSound }: Options) {
     return () => clearTimeout(t)
   }, [state.open])
 
-  // Win: let the last voice clip finish, play bravo, then start a new game by itself.
+  // Win: let the last voice clip finish, then play bravo. The win screen stays up
+  // until "Играй отново" is pressed — no automatic restart.
   const won = isWon(state)
   useEffect(() => {
     if (!won) return
     let cancelled = false
-    const fanfare = whenClipDone().then(() => {
+    void whenClipDone().then(() => {
       if (cancelled) return
-      if (winSound) return playClip(winSound)
-      sound.win()
-    })
-    const pause = new Promise((r) => setTimeout(r, MIN_WIN_PAUSE))
-    Promise.all([fanfare, pause]).then(() => {
-      if (!cancelled) restart()
+      if (winSound) void playClip(winSound)
+      else sound.win()
     })
     return () => {
       cancelled = true
     }
-  }, [won, winSound, restart])
+  }, [won, winSound])
+
+  // Several fingers can land in the same instant, before React re-renders. Track the
+  // state each flip produces so the next finger sees it (sounds stay correct too).
+  const latest = useRef(state)
+  useLayoutEffect(() => {
+    latest.current = state
+  }, [state])
 
   const flip = (index: number) => {
-    const outcome = flipOutcome(state, index)
+    const current = latest.current
+    const outcome = flipOutcome(current, index)
     if (outcome === 'ignored') return
 
-    const clip = soundFor(state.cards[index].src)
+    const clip = soundFor(current.cards[index].src)
     if (clip) void playClip(clip)
     else sound.flip()
 
-    const lastPair = state.cards.filter((c) => !c.matched).length === 2
+    const lastPair = current.cards.filter((c) => !c.matched).length === 2
     if (outcome === 'match' && !lastPair) {
       // chime after the voice, so they don't talk over each other
       void whenClipDone().then(sound.match)
     }
     if (outcome === 'miss' && !clip) setTimeout(sound.miss, 350)
 
-    dispatch({ type: 'flip', index })
+    const action = { type: 'flip', index } as const
+    latest.current = reducer(current, action)
+    dispatch(action)
   }
 
   return { state, won, flip, restart }

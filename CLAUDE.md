@@ -41,6 +41,8 @@ Target is **Android phones (Chrome)** in landscape — iOS/Safari quirks don't n
 
 - Grid is **4×3 = 6 pairs** (`COLS`/`ROWS` in `src/App.tsx`). With 10 images, each game uses a random 6. `COLS * ROWS` must be even.
 - **Sounds:** flipping a card plays that image's voice clip (synth blip if it has none). A match plays a short chime *after* the voice; a miss has no buzz when a voice clip played. The final match skips the chime.
-- **Win:** waits for the last voice clip, plays `bravo.mp3`, shows the win screen, then starts a new game automatically (after bravo ends, min 2.5s). "Play again" restarts immediately.
+- **Win:** waits for the last voice clip, plays `bravo.mp3` and shows the win screen ("Браво, намери всички!"). It stays until "Играй отново" is pressed — no automatic restart.
+- **Touch:** cards flip on `pointerdown` (each finger independently — a resting finger would block `click`); zoom, panning, pull-to-refresh and the long-press menu are disabled (viewport meta + `touch-action: none`). The flip handler tracks the latest state in a ref so several fingers landing at once are handled in order.
+- UI text is Bulgarian.
 - Mismatched pairs stay visible 1.2s (long enough to hear the voice start).
 - Clips are used as recorded (no trimming/normalizing — ffmpeg isn't available here).
